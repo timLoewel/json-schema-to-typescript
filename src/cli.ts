@@ -4,15 +4,21 @@ import { whiteBright } from 'cli-color'
 import { JSONSchema4 } from 'json-schema'
 import minimist = require('minimist')
 import { readFile, writeFile } from 'mz/fs'
-import { resolve } from 'path'
+import * as _glob from 'glob'
+import { promisify } from 'util'
+import { join, resolve, basename } from 'path'
 import stdin = require('stdin')
 import { compile, Options } from './index'
+
+const glob = promisify(_glob)
 
 main(minimist(process.argv.slice(2), {
   alias: {
     help: ['h'],
     input: ['i'],
-    output: ['o']
+    output: ['o'],
+    inDir: ['x'],
+    outDir: ['y']
   }
 }))
 
@@ -23,18 +29,41 @@ async function main(argv: minimist.ParsedArgs) {
     process.exit(0)
   }
 
-  const argIn: string = argv._[0] || argv.input
-  const argOut: string = argv._[1] || argv.output
+  const argIn: string = argv._[0] || argv.input || argv.inDir
+  const argOut: string = argv._[1] || argv.output || argv.outDir
 
   try {
-    const schema: JSONSchema4 = JSON.parse(await readInput(argIn))
-    const ts = await compile(schema, argIn, argv as Partial<Options>)
-    await writeOutput(ts, argOut)
+    if (argv.inDir) {
+      const files = await glob(join(process.cwd(), argIn))
+      await processFiles(files, argOut, argv as Partial<Options>)
+    } else {
+      const schema: JSONSchema4 = JSON.parse(await readInput(argIn))
+      const ts = await compile(schema, argIn, argv as Partial<Options>)
+      await writeOutput(ts, argOut)
+    }
   } catch (e) {
     console.error(whiteBright.bgRedBright('error'), e)
     process.exit(1)
   }
+}
 
+function processFiles(files: string[], outDir: string, argv: Partial<Options>) {
+  return new Promise(async (res, rej) => {
+    try {
+      for (let i = 0; i < files.length; i++) {
+        let schema = JSON.parse(await readInput(files[i]))
+        let ts = await compile(schema, files[i], argv)
+        if (!outDir) {
+          await writeOutput(ts, '')
+        } else {
+          await writeOutput(ts, join(process.cwd(), outDir, `${basename(files[i], '.json')}.d.ts`))
+        }
+      }
+      res()
+    } catch (err) {
+      rej(err)
+    }
+  })
 }
 
 function readInput(argIn?: string) {
