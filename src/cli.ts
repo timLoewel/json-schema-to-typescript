@@ -3,8 +3,9 @@
 import { whiteBright } from 'cli-color'
 import { JSONSchema4 } from 'json-schema'
 import minimist = require('minimist')
-import { readFile, writeFile } from 'mz/fs'
+import { readFile, writeFile, mkdir, existsSync } from 'mz/fs'
 import * as _glob from 'glob'
+import isGlob = require('is-glob')
 import { promisify } from 'util'
 import { join, resolve, basename } from 'path'
 import stdin = require('stdin')
@@ -17,8 +18,7 @@ main(minimist(process.argv.slice(2), {
     help: ['h'],
     input: ['i'],
     output: ['o'],
-    inDir: ['i'],
-    outDir: ['o']
+    recursive: ['r']
   }
 }))
 
@@ -29,11 +29,15 @@ async function main(argv: minimist.ParsedArgs) {
     process.exit(0)
   }
 
-  const argIn: string = argv._[0] || argv.input || argv.inDir
-  const argOut: string = argv._[1] || argv.output || argv.outDir
+  const argIn: string = argv._[0] || argv.input
+  const argOut: string = argv._[1] || argv.output
 
   try {
-    if (argv.inDir) {
+    if (isGlob(argIn)) {
+      if (!existsSync(argOut)) {
+        await mkdir(argOut)
+      }
+
       const files = await glob(join(process.cwd(), argIn))
       const processFiles = files.map(file => processFile(file, { dir: argOut }, argv as Partial<Options>))
       await Promise.all(processFiles)

@@ -1,6 +1,6 @@
 import test from 'ava'
 import { execSync } from 'child_process'
-import { readFileSync, unlinkSync } from 'fs'
+import { readFileSync, unlinkSync, readdirSync, rmdirSync } from 'fs'
 
 export function run() {
 
@@ -80,6 +80,17 @@ export function run() {
     execSync('node dist/src/cli.js --input ./test/resources/ReferencedType.json --output ./ReferencedType.d.ts').toString()
     t.snapshot(readFileSync('./ReferencedType.d.ts', 'utf-8'))
     unlinkSync('./ReferencedType.d.ts')
+  })
+
+  test('files in (-i), files out (-o)', t => {
+    execSync('node dist/src/cli.js -i ./test/resources/MultiSchema/**/*.json -o ./test/resources/MultiSchema/out').toString()
+    
+    readdirSync('./test/resources/MultiSchema/out').forEach(f => {
+      const path = `./test/resources/MultiSchema/out/${f}`
+      t.snapshot(readFileSync(path, 'utf-8'))
+      unlinkSync(path)
+    })
+    rmdirSync('./test/resources/MultiSchema/out')
   })
 
 }

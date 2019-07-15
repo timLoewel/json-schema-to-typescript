@@ -45,11 +45,13 @@
   },
   "homepage": "https://github.com/bcherny/json-schema-to-typescript#readme",
   "dependencies": {
+    "@types/is-glob": "^4.0.1",
     "@types/json-schema": "^7.0.3",
     "@types/node": ">=4.5.0",
     "@types/prettier": "^1.16.1",
     "cli-color": "^1.4.0",
     "glob": "^7.1.4",
+    "is-glob": "^4.0.1",
     "json-schema-ref-parser": "^6.1.0",
     "json-stringify-safe": "^5.0.1",
     "lodash": "^4.17.11",
