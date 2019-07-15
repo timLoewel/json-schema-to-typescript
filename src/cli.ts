@@ -17,8 +17,8 @@ main(minimist(process.argv.slice(2), {
     help: ['h'],
     input: ['i'],
     output: ['o'],
-    inDir: ['x'],
-    outDir: ['y']
+    inDir: ['i'],
+    outDir: ['o']
   }
 }))
 
@@ -35,11 +35,10 @@ async function main(argv: minimist.ParsedArgs) {
   try {
     if (argv.inDir) {
       const files = await glob(join(process.cwd(), argIn))
-      await processFiles(files, argOut, argv as Partial<Options>)
+      const processFiles = files.map(file => processFile(file, { dir: argOut }, argv as Partial<Options>))
+      await Promise.all(processFiles)
     } else {
-      const schema: JSONSchema4 = JSON.parse(await readInput(argIn))
-      const ts = await compile(schema, argIn, argv as Partial<Options>)
-      await writeOutput(ts, argOut)
+      await processFile(argIn, { file: argOut }, argv as Partial<Options>)
     }
   } catch (e) {
     console.error(whiteBright.bgRedBright('error'), e)
@@ -47,18 +46,15 @@ async function main(argv: minimist.ParsedArgs) {
   }
 }
 
-function processFiles(files: string[], outDir: string, argv: Partial<Options>) {
+function processFile(file: string, out: {dir?: string, file?: string}, argv: Partial<Options>) {
   return new Promise(async (res, rej) => {
     try {
-      for (let i = 0; i < files.length; i++) {
-        let schema = JSON.parse(await readInput(files[i]))
-        let ts = await compile(schema, files[i], argv)
-        if (!outDir) {
-          await writeOutput(ts, '')
-        } else {
-          await writeOutput(ts, join(process.cwd(), outDir, `${basename(files[i], '.json')}.d.ts`))
-        }
-      }
+      const schema = JSON.parse(await readInput(file))
+      const ts = await compile(schema, file, argv)
+      await writeOutput(
+        ts,
+        out.dir ? join(process.cwd(), out.dir, `${basename(file, '.json')}.d.ts`) : out.file || ''
+      )
       res()
     } catch (err) {
       rej(err)
