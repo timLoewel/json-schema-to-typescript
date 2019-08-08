@@ -47,6 +47,7 @@
   "dependencies": {
     "@types/is-glob": "^4.0.1",
     "@types/json-schema": "^7.0.3",
+    "@types/mkdirp": "^0.5.2",
     "@types/node": ">=4.5.0",
     "@types/prettier": "^1.16.1",
     "cli-color": "^1.4.0",
@@ -56,6 +57,7 @@
     "json-stringify-safe": "^5.0.1",
     "lodash": "^4.17.11",
     "minimist": "^1.2.0",
+    "mkdirp": "^0.5.1",
     "mz": "^2.7.0",
     "prettier": "^1.18.2",
     "stdin": "0.0.1"

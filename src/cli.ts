@@ -3,13 +3,22 @@
 import { whiteBright } from 'cli-color'
 import { JSONSchema4 } from 'json-schema'
 import minimist = require('minimist')
-import { readFile, writeFile, mkdir, existsSync } from 'mz/fs'
+import { readFile, writeFile, existsSync } from 'mz/fs'
+import * as _mkdirp from 'mkdirp'
 import * as _glob from 'glob'
 import isGlob = require('is-glob')
 import { promisify } from 'util'
 import { join, resolve, basename } from 'path'
 import stdin = require('stdin')
 import { compile, Options } from './index'
+
+// Promisify mkdirp
+const mkdirp = (path: string) => new Promise((res, rej) => {
+  _mkdirp(path, (err, made) => {
+    if (err) rej(err)
+    else res(made)
+  })
+})
 
 const glob = promisify(_glob)
 
@@ -33,24 +42,34 @@ async function main(argv: minimist.ParsedArgs) {
   const argOut: string = argv._[1] || argv.output
 
   try {
-    if (isGlob(argIn)) {
-      if (!existsSync(argOut)) {
-        await mkdir(argOut)
-      }
-
-      const files = await glob(join(process.cwd(), argIn))
-      const processFiles = files.map(file => processFile(file, { dir: argOut }, argv as Partial<Options>))
-      await Promise.all(processFiles)
-    } else {
-      await processFile(argIn, { file: argOut }, argv as Partial<Options>)
-    }
+    let files = await getFilesToProcess(argIn, argOut, argv as Partial<Options>)
+    await Promise.all(files)
   } catch (e) {
     console.error(whiteBright.bgRedBright('error'), e)
     process.exit(1)
   }
 }
 
-function processFile(file: string, out: {dir?: string, file?: string}, argv: Partial<Options>) {
+function getFilesToProcess(argIn: string, argOut: string, argv: Partial<Options>): Promise<Promise<void>[]> {
+  return new Promise(async (res, rej) => {
+    if (isGlob(argIn)){
+      let files = await glob(join(process.cwd(), argIn))
+
+      if (files.length === 0) {
+        rej('No files match glob pattern')
+      }
+
+      if (!existsSync(argOut)) {
+        await mkdirp(argOut)
+      }
+
+      res(files.map(file => processFile(file, { dir: argOut }, argv)))
+    }
+    res([processFile(argIn, { file: argOut }, argv)])
+  })
+}
+
+function processFile(file: string, out: {dir?: string, file?: string}, argv: Partial<Options>): Promise<void> {
   return new Promise(async (res, rej) => {
     try {
       const schema = JSON.parse(await readInput(file))
