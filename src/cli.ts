@@ -15,7 +15,7 @@ import { compile, Options } from './index'
 const mkdirp = (path: string) => new Promise((res, rej) => {
   _mkdirp(path, (err, made) => {
     if (err) rej(err)
-    else res(made)
+    else res(made === null ? undefined : made)
   })
 })
 
@@ -51,20 +51,27 @@ async function main(argv: minimist.ParsedArgs) {
 
 function getFilesToProcess(argIn: string, argOut: string, argv: Partial<Options>): Promise<Promise<void>[]> {
   return new Promise(async (res, rej) => {
-    if (isGlob(argIn)){
-      let files = await glob(join(process.cwd(), argIn))
-
-      if (files.length === 0) {
-        rej('No files match glob pattern')
+    try {
+      if (isGlob(argIn)) {
+        let files = await glob(join(process.cwd(), argIn))
+  
+        if (files.length === 0) {
+          rej('No files match glob pattern')
+        }
+  
+        if (argOut && !existsSync(argOut)) {
+          await mkdirp(argOut)
+        }
+  
+        res(files.map(file => processFile(file, { dir: argOut }, argv)))
+        return
+      } else {
+        res([processFile(argIn, { file: argOut }, argv)])
       }
-
-      if (!existsSync(argOut)) {
-        await mkdirp(argOut)
-      }
-
-      res(files.map(file => processFile(file, { dir: argOut }, argv)))
+    } catch (e) {
+      console.error(whiteBright.bgRedBright('error'), e)
+      process.exit(1)
     }
-    res([processFile(argIn, { file: argOut }, argv)])
   })
 }
 
