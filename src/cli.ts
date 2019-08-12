@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { whiteBright } from 'cli-color'
-import { JSONSchema4 } from 'json-schema'
 import minimist = require('minimist')
 import { readFile, writeFile, existsSync } from 'mz/fs'
 import * as _mkdirp from 'mkdirp'
