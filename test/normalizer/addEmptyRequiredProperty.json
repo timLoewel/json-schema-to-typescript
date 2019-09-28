@@ -1,23 +1,23 @@
 {
   "name": "Add empty `required` property if none is defined",
   "in": {
-    "id": "foo",
+    "$id": "foo",
     "type": ["object"],
     "properties": {
       "a": {
         "type": "integer",
-        "id": "a"
+        "$id": "a"
       }
     },
     "additionalProperties": true
   },
   "out": {
-    "id": "foo",
+    "$id": "foo",
     "type": "object",
     "properties": {
       "a": {
         "type": "integer",
-        "id": "a"
+        "$id": "a"
       }
     },
     "additionalProperties": true,

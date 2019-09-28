@@ -1,6 +1,6 @@
 export let input =
 {
-    "id":"#",
+    "$id":"#",
     "definitions":{
         "VerifyAllLogs":{
             "allOf":[
@@ -1102,7 +1102,7 @@ export let input =
                         "namespaceURI":""
                     }
                 },
-                "id":{
+                "$id":{
                     "title":"id",
                     "allOf":[
                         {
@@ -18495,7 +18495,7 @@ export let input =
                         "namespaceURI":""
                     }
                 },
-                "id":{
+                "$id":{
                     "title":"id",
                     "allOf":[
                         {

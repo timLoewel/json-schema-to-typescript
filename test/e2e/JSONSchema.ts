@@ -1,5 +1,5 @@
 export const input = {
-  id: 'http://json-schema.org/draft-04/schema#',
+  $id: 'http://json-schema.org/draft-04/schema#',
   $schema: 'http://json-schema.org/draft-04/schema#',
   description: 'Core schema meta-schema',
   definitions: {
@@ -27,7 +27,7 @@ export const input = {
   },
   type: 'object',
   properties: {
-    id: {
+    $id: {
       type: 'string',
       format: 'uri'
     },

@@ -1,5 +1,5 @@
 {
-  "id": "http://dummy.com/api/example-schema",
+  "$id": "http://dummy.com/api/example-schema",
   "title": "Example Schema",
   "type": "object",
   "properties": {

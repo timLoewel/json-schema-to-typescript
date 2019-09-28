@@ -113,14 +113,14 @@ const namedSchema = {
       type: 'array',
       items: [
         {
-          id: 'StringSchema1',
+          $id: 'StringSchema1',
           type: 'object',
           properties: {
             foo: { type: 'string' }
           }
         },
         {
-          id: 'NumberSchema1',
+          $id: 'NumberSchema1',
           type: 'object',
           properties: {
             bar: { type: 'number' }
@@ -133,14 +133,14 @@ const namedSchema = {
       type: 'array',
       items: [
         {
-          id: 'StringSchema2',
+          $id: 'StringSchema2',
           type: 'object',
           properties: {
             foo: { type: 'string' }
           }
         },
         {
-          id: 'NumberSchema2',
+          $id: 'NumberSchema2',
           type: 'object',
           properties: {
             bar: { type: 'number' }
@@ -148,7 +148,7 @@ const namedSchema = {
         }
       ],
       additionalItems: {
-        id: 'BooleanSchema1',
+        $id: 'BooleanSchema1',
         type: 'object',
         properties: {
           baz: { type: 'boolean' }

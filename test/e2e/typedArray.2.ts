@@ -14,7 +14,7 @@ export const input = {
       title: 'Array Item',
       type: 'object',
       properties: {
-        id: {
+        $id: {
           title: 'Id',
           type: 'string'
         }

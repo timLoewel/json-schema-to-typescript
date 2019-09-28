@@ -4,7 +4,7 @@
 export const input = {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "JSON-stat 2.0 Schema",
-  "id": "https://json-stat.org/format/schema/2.0/",
+  "$id": "https://json-stat.org/format/schema/2.0/",
   "description": "This is version 1.03 of the JSON-stat 2.0 Schema (2016-05-04)",
   "definitions": {
     "strarray": {
@@ -135,7 +135,7 @@ export const input = {
 
               "category": { "$ref": "#/definitions/category" },
 
-              "id": { "$ref": "#/definitions/strarray" },
+              "$id": { "$ref": "#/definitions/strarray" },
 
               "size": {
                 "type": "array",
@@ -241,7 +241,7 @@ export const input = {
         error: { $ref: "#/definitions/error" },
         extension: { $ref: "#/definitions/extension" },
 
-        id: { $ref: "#/definitions/strarray" },
+        $id: { $ref: "#/definitions/strarray" },
 
         size: {
           type: "array",
@@ -377,7 +377,7 @@ export const input = {
 
                   "category": { "$ref": "#/definitions/category" },
 
-                  "id": { "$ref": "#/definitions/strarray" },
+                  "$id": { "$ref": "#/definitions/strarray" },
 
                   "size": {
                     "type": "array",

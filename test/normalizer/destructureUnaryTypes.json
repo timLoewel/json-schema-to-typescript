@@ -1,36 +1,36 @@
 {
   "name": "Destructure unary types",
   "in": {
-    "id": "foo",
+    "$id": "foo",
     "type": ["object"],
     "definitions": {
       "a": {
         "type": ["integer"],
-        "id": "a"
+        "$id": "a"
       }
     },
     "properties": {
       "b": {
         "type": ["string"],
-        "id": "b"
+        "$id": "b"
       }
     },
     "additionalProperties": true,
     "required": []
   },
   "out": {
-    "id": "foo",
+    "$id": "foo",
     "type": "object",
     "definitions": {
       "a": {
         "type": "integer",
-        "id": "a"
+        "$id": "a"
       }
     },
     "properties": {
       "b": {
         "type": "string",
-        "id": "b"
+        "$id": "b"
       }
     },
     "additionalProperties": true,

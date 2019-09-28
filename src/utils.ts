@@ -1,7 +1,7 @@
 import { whiteBright } from 'cli-color'
 import { deburr, isPlainObject, mapValues, trim, upperFirst } from 'lodash'
 import { basename, extname } from 'path'
-import { JSONSchema } from './types/JSONSchema'
+import { JSONSchema, JSONSchemaDefinition } from './types/JSONSchema'
 
 // TODO: pull out into a separate package
 export function Try<T>(fn: () => T, err: (e: Error) => any): T {
@@ -45,7 +45,7 @@ export function mapDeep(
 
 // keys that shouldn't be traversed by the catchall step
 const BLACKLISTED_KEYS = new Set([
-  'id',
+  '$id',
   '$schema',
   'title',
   'description',
@@ -79,17 +79,24 @@ const BLACKLISTED_KEYS = new Set([
   'not'
 ])
 function traverseObjectKeys(
-  obj: Record<string, JSONSchema>,
+  obj: Record<string, JSONSchemaDefinition | string[]>,
   callback: (schema: JSONSchema) => void
 ) {
   Object.keys(obj).forEach(k => {
-    if (obj[k] && typeof obj[k] === 'object' && !Array.isArray(obj[k])) {
-      traverse(obj[k], callback)
+    const child = obj[k]
+    if (child && typeof child === 'object' && !Array.isArray(child)) {
+      traverse(child, callback)
     }
   })
 }
-function traverseArray(arr: JSONSchema[], callback: (schema: JSONSchema) => void) {
-  arr.forEach(i => traverse(i, callback))
+function traverseArray(arr: JSONSchemaDefinition[], callback: (schema: JSONSchema) => void) {
+  arr.forEach(i => {
+    if (typeof i === 'boolean') {
+      return
+    }
+
+    traverse(i, callback)
+  })
 }
 export function traverse(schema: JSONSchema, callback: (schema: JSONSchema) => void): void {
   callback(schema)
@@ -116,7 +123,7 @@ export function traverse(schema: JSONSchema, callback: (schema: JSONSchema) => v
     const {items} = schema
     if (Array.isArray(items)) {
       traverseArray(items, callback)
-    } else {
+    } else if (items !== true) {
       traverse(items, callback)
     }
   }
@@ -129,15 +136,15 @@ export function traverse(schema: JSONSchema, callback: (schema: JSONSchema) => v
   if (schema.definitions) {
     traverseObjectKeys(schema.definitions, callback)
   }
-  if (schema.not) {
+  if (schema.not && typeof schema.not !== 'boolean') {
     traverse(schema.not, callback)
   }
 
   // technically you can put definitions on any key
-  Object.keys(schema).filter(key => !BLACKLISTED_KEYS.has(key)).forEach(key => {
+  (Object.keys(schema) as Array<keyof typeof schema>).filter(key => !BLACKLISTED_KEYS.has(key)).forEach(key => {
     const child = schema[key]
     if (child && typeof child === 'object') {
-      traverseObjectKeys(child, callback)
+      traverseObjectKeys(child as Record<string, JSONSchemaDefinition>, callback)
     }
   })
 }

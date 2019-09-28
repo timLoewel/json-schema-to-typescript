@@ -1,12 +1,12 @@
 export let input = {
-  id: 'Parent',
+  $id: 'Parent',
   type: 'object',
   additionalProperties: {
     type: 'number',
   },
   patternProperties: {
     '^[a-zA-Z]+': {
-      id: 'StringChild',
+      $id: 'StringChild',
       type: 'string',
     },
   },

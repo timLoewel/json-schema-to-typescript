@@ -9,7 +9,7 @@
       },
       "additionalProperties": true,
       "required": [],
-      "id": "friend"
+      "$id": "friend"
     },
     "properties": {
       "firstName": {
@@ -28,7 +28,7 @@
       },
       "additionalProperties": true,
       "required": [],
-      "id": "friend"
+      "$id": "friend"
     },
     "properties": {
       "firstName": {
@@ -37,6 +37,6 @@
     },
     "additionalProperties": true,
     "required": ["firstName"],
-    "id": "DefaultID"
+    "$id": "DefaultID"
   }
 }

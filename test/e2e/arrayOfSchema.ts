@@ -3,12 +3,12 @@ export const input = {
   type: 'object',
   properties: {
     countries: {
-      id: 'Countries',
+      $id: 'Countries',
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          id: {
+          $id: {
             type: 'string',
             minLength: 2,
             maxLength: 2,

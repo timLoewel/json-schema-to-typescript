@@ -1,5 +1,5 @@
 {
-  "id": "http://dummy.com/api/base2",
+  "$id": "http://dummy.com/api/base2",
   "title": "Base2",
   "type": "object",
   "properties": {

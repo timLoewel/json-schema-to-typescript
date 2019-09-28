@@ -1,13 +1,11 @@
-import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
+import { JSONSchema6, JSONSchema6Definition, JSONSchema6Type, JSONSchema6TypeName } from 'json-schema'
 
 export type SCHEMA_TYPE = 'ALL_OF' | 'UNNAMED_SCHEMA' | 'ANY' | 'ANY_OF'
   | 'BOOLEAN' | 'NAMED_ENUM' | 'NAMED_SCHEMA' | 'NULL' | 'NUMBER' | 'STRING'
   | 'OBJECT' | 'ONE_OF' | 'TYPED_ARRAY' | 'REFERENCE' | 'UNION' | 'UNNAMED_ENUM'
   | 'UNTYPED_ARRAY' | 'CUSTOM_TYPE'
 
-export type JSONSchemaTypeName = JSONSchema4TypeName
-
-export interface JSONSchema extends JSONSchema4 {
+export type JSONSchemaTS = {
   /**
    * schema extension to support numeric enums
    */
@@ -17,6 +15,11 @@ export interface JSONSchema extends JSONSchema4 {
    */
   tsType?: string
 }
+
+export type JSONSchemaTypeName = JSONSchema6TypeName
+export type JSONSchemaType = JSONSchema6Type
+export type JSONSchemaDefinition = JSONSchema6Definition
+export type JSONSchema = JSONSchema6 & JSONSchemaTS
 
 // const SCHEMA_PROPERTIES = [
 //   'additionalItems', 'additionalProperties', 'items', 'definitions',
@@ -28,50 +31,50 @@ export interface JSONSchema extends JSONSchema4 {
 //   return []
 // }
 
-export interface NormalizedJSONSchema extends JSONSchema {
-  additionalItems?: boolean | NormalizedJSONSchema
-  additionalProperties: boolean | NormalizedJSONSchema
-  items?: NormalizedJSONSchema | NormalizedJSONSchema[]
+export type NormalizedJSONSchema<T extends JSONSchema> = T & {
+  additionalItems?: boolean | NormalizedJSONSchema<T>
+  additionalProperties: boolean | NormalizedJSONSchema<T>
+  items?: NormalizedJSONSchema<T> | NormalizedJSONSchema<T>[]
   definitions?: {
-    [k: string]: NormalizedJSONSchema
+    [k: string]: NormalizedJSONSchema<T>
   }
   properties?: {
-    [k: string]: NormalizedJSONSchema
+    [k: string]: NormalizedJSONSchema<T>
   }
   patternProperties?: {
-    [k: string]: NormalizedJSONSchema
+    [k: string]: NormalizedJSONSchema<T>
   }
   dependencies?: {
-    [k: string]: NormalizedJSONSchema | string[]
+    [k: string]: NormalizedJSONSchema<T> | string[]
   }
-  allOf?: NormalizedJSONSchema[]
-  anyOf?: NormalizedJSONSchema[]
-  oneOf?: NormalizedJSONSchema[]
-  not?: NormalizedJSONSchema
+  allOf?: NormalizedJSONSchema<T>[]
+  anyOf?: NormalizedJSONSchema<T>[]
+  oneOf?: NormalizedJSONSchema<T>[]
+  not?: NormalizedJSONSchema<T>
   required: string[]
 }
 
-export interface EnumJSONSchema extends NormalizedJSONSchema {
+export type EnumJSONSchema<T> = NormalizedJSONSchema<T> & {
   enum: any[]
 }
 
-export interface NamedEnumJSONSchema extends NormalizedJSONSchema {
+export type NamedEnumJSONSchema<T> = NormalizedJSONSchema<T> & {
   tsEnumNames: string[]
 }
 
-export interface SchemaSchema extends NormalizedJSONSchema {
+export type SchemaSchema<T> = NormalizedJSONSchema<T> & {
   properties: {
-    [k: string]: NormalizedJSONSchema
+    [k: string]: NormalizedJSONSchema<T>
   }
   required: string[]
 }
 
-export interface JSONSchemaWithDefinitions extends NormalizedJSONSchema {
+export type JSONSchemaWithDefinitions<T> = NormalizedJSONSchema<T> & {
   definitions: {
-    [k: string]: NormalizedJSONSchema
+    [k: string]: NormalizedJSONSchema<T>
   }
 }
 
-export interface CustomTypeJSONSchema extends NormalizedJSONSchema {
+export type CustomTypeJSONSchema<T> = NormalizedJSONSchema<T> & {
   tsType: string
 }

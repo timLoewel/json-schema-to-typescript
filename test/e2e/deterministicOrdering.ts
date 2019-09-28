@@ -933,7 +933,7 @@ export const input = {
       ]
     },
     schema: {
-      "id": "JSONSchema",
+      "$id": "JSONSchema",
       "type": "object",
       "description": "A deterministic version of a JSON Schema object.",
       "patternProperties": {

@@ -29,12 +29,6 @@ rules.set('Add empty `required` property if none is defined', (schema) => {
   }
 })
 
-rules.set('Transform `required`=false to `required`=[]', (schema) => {
-  if (schema.required === false) {
-    schema.required = []
-  }
-})
-
 // TODO: default to empty schema (as per spec) instead
 rules.set('Default additionalProperties to true', (schema) => {
   if (!('additionalProperties' in schema) &&
@@ -45,8 +39,8 @@ rules.set('Default additionalProperties to true', (schema) => {
 })
 
 rules.set('Default top level `id`', (schema, rootSchema, fileName) => {
-  if (!schema.id && stringify(schema) === stringify(rootSchema)) {
-    schema.id = toSafeString(justName(fileName))
+  if (!schema.$id && stringify(schema) === stringify(rootSchema)) {
+    schema.$id = toSafeString(justName(fileName))
   }
 })
 
@@ -88,8 +82,8 @@ rules.set('Normalize schema.items', schema => {
   return schema
 })
 
-export function normalize(schema: JSONSchema, filename?: string): NormalizedJSONSchema {
-  const _schema = cloneDeep(schema) as NormalizedJSONSchema
+export function normalize<T extends JSONSchema>(schema: T, filename?: string): NormalizedJSONSchema<T> {
+  const _schema = cloneDeep(schema) as NormalizedJSONSchema<T>
   rules.forEach((rule, key) => {
     traverse(_schema, (schema) => rule(schema, _schema, filename))
     log(whiteBright.bgYellow('normalizer'), `Applied rule: "${key}"`)

@@ -8,7 +8,7 @@ export let input = {
       type: 'string'
     },
     lastName: {
-      id: 'lastName',
+      $id: 'lastName',
       type: 'string'
     }
   },
