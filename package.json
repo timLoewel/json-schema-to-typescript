@@ -59,9 +59,11 @@
   },
   "devDependencies": {
     "@types/cli-color": "^0.3.29",
+    "@types/json-stringify-safe": "^5.0.0",
     "@types/lodash": "^4.14.141",
     "@types/minimist": "^1.2.0",
     "@types/mz": "0.0.32",
+    "@types/stdin": "^0.0.0",
     "ava": "^2.4.0",
     "browserify": "^16.5.0",
     "browserify-shim": "^3.8.14",
