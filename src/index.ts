@@ -50,6 +50,10 @@ export interface Options {
    * [$RefParser](https://github.com/BigstickCarpet/json-schema-ref-parser) Options, used when resolving `$ref`s
    */
   $refOptions: $RefOptions
+  /**
+   * Field to use as id of the schema
+   */
+  id: string
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -73,7 +77,8 @@ export const DEFAULT_OPTIONS: Options = {
     trailingComma: 'none',
     useTabs: false
   },
-  unreachableDefinitions: false
+  unreachableDefinitions: false,
+  id: '$id'
 }
 
 export function compileFromFile(

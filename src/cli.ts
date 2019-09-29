@@ -1,140 +1,185 @@
 #!/usr/bin/env node
 
 import { whiteBright } from 'cli-color'
+import fs = require('fs')
+import getstdin = require('get-stdin')
 import * as _glob from 'glob'
 import isGlob = require('is-glob')
-import minimist = require('minimist')
-import * as _mkdirp from 'mkdirp'
-import { existsSync, readFile, writeFile } from 'mz/fs'
-import { basename, join, resolve } from 'path'
-import stdin = require('stdin')
+import { ResolverOptions } from 'json-schema-ref-parser'
+import { basename, dirname, extname, join, relative, resolve } from 'path'
 import { promisify } from 'util'
+import yargs = require('yargs')
 import { compile, Options } from './index'
+import { JSONSchema } from './types/JSONSchema'
 
-// Promisify mkdirp
-const mkdirp = (path: string) => new Promise((res, rej) => {
-  _mkdirp(path, (err, made) => {
-    if (err) rej(err)
-    else res(made === null ? undefined : made)
-  })
-})
-
+const { mkdir, readFile, writeFile } = fs.promises
 const glob = promisify(_glob)
+const opts = yargs
+  .usage('$0 [input] [output]', 'transform schemas into types')
+  .option('input', {
+    alias: 'i',
+    type: 'string',
+    array: true,
+    description: 'array of input schemas to transform, set to - for stdin',
+    default: '-'
+  })
+  .option('output', {
+    alias: 'o',
+    type: 'string',
+    description: 'file to write stuff out to'
+  })
+  .option('cwd', {
+    description: 'Root directory for resolving $ref',
+    type: 'string',
+    required: true,
+    default: process.cwd()
+  })
+  .option('declareExternallyReferenced', {
+    boolean: true,
+    default: false,
+    description: 'Declare external schemas referenced via \'$ref\'?'
+  })
+  .option('enableConstEnums', {
+    boolean: true,
+    description: 'Prepend enums with \'const\'?'
+  })
+  .option('unreachableDefinitions', {
+    boolean: true,
+    description: 'Generates code for definitions that aren\'t referenced by the schema'
+  })
+  .option('style', {
+    description: 'Prettier configuration'
+  })
+  .help()
+  .argv
 
-main(minimist(process.argv.slice(2), {
-  alias: {
-    help: ['h'],
-    input: ['i'],
-    output: ['o'],
-    recursive: ['r']
-  }
-}))
+main(opts)
 
-async function main(argv: minimist.ParsedArgs) {
+function unwrap(x: string[] | string) {
+  return Array.isArray(x) && x.length === 1 ? x[0] : x
+}
 
-  if (argv.help) {
-    printHelp()
-    process.exit(0)
-  }
-
-  const argIn: string = argv._[0] || argv.input
-  const argOut: string = argv._[1] || argv.output
+async function main(argv: typeof opts) {
+  const input = unwrap(argv.input || argv._[0])
+  const output = typeof argv.output === 'string'
+    ? argv.output
+    : argv._[1]
 
   try {
-    let files = await getFilesToProcess(argIn, argOut, argv as Partial<Options>)
-    await Promise.all(files)
+    await processFiles(input, output, argv as Partial<Options>)
   } catch (e) {
     console.error(whiteBright.bgRedBright('error'), e)
     process.exit(1)
   }
 }
 
-function getFilesToProcess(argIn: string, argOut: string, argv: Partial<Options>): Promise<Promise<void>[]> {
-  return new Promise(async (res, rej) => {
-    try {
-      if (isGlob(argIn)) {
-        let files = await glob(join(process.cwd(), argIn))
+type Output = { dir?: string, file?: string }
+type SchemaMap = Map<string, { file: string, schema: JSONSchema }>
 
-        if (files.length === 0) {
-          rej('No files match glob pattern')
-        }
+async function processFiles(argIn: string | string[], argOut: string, argv: Partial<Options>): Promise<void> {
+  try {
+    let files: string[]
+    if (typeof argIn === 'string' && isGlob(argIn)) {
+      files = await glob(join(process.cwd(), argIn))
 
-        if (argOut && !existsSync(argOut)) {
-          await mkdirp(argOut)
-        }
-
-        res(files.map(file => processFile(file, { dir: argOut }, argv)))
-        return
-      } else {
-        res([processFile(argIn, { file: argOut }, argv)])
+      if (files.length === 0) {
+        throw new Error('No files match glob pattern')
       }
-    } catch (e) {
-      console.error(whiteBright.bgRedBright('error'), e)
-      process.exit(1)
+    } else if (Array.isArray(argIn)) {
+      files = argIn
+    } else {
+      files = [argIn]
     }
-  })
-}
 
-function processFile(file: string, out: {dir?: string, file?: string}, argv: Partial<Options>): Promise<void> {
-  return new Promise(async (res, rej) => {
-    try {
-      const schema = JSON.parse(await readInput(file))
-      const ts = await compile(schema, file, argv)
-      await writeOutput(
-        ts,
-        out.dir ? join(process.cwd(), out.dir, `${basename(file, '.json')}.d.ts`) : out.file || ''
-      )
-      res()
-    } catch (err) {
-      rej(err)
+    if (argOut) {
+      const base = extname(argOut) ? dirname(argOut) : argOut
+      try {
+        await mkdir(base, { recursive: true, mode: 0o755 })
+      } catch (e) {
+        if (e.code !== 'EEXIST') {
+          throw e
+        }
+      }
     }
-  })
-}
 
-function readInput(argIn?: string) {
-  if (!argIn) {
-    return new Promise(stdin)
+    const schemaMap: SchemaMap = await readFiles(files, argv)
+    const base = argv.cwd!
+    const resolver: ResolverOptions = {
+      order: 1,
+      canRead: true,
+      async read(file): Promise<string> {
+        const id = relative(base, file.url)
+        const datum = schemaMap.get(id)
+        if (!datum) {
+          throw new Error(`cant find ref ${id}`)
+        }
+        return datum.file
+      }
+    }
+
+    argv.$refOptions = argv.$refOptions || {}
+    argv.$refOptions.resolve = { file: resolver }
+
+    const output: Output = schemaMap.size === 1
+      ? { file: argOut }
+      : { dir: argOut }
+
+    for (const [path, { schema }] of schemaMap.entries()) {
+      await processFile(schema, path, output, argv)
+    }
+  } catch (e) {
+    console.error(whiteBright.bgRedBright('error'), e)
+    process.exit(1)
   }
+}
+
+async function readFiles(files: string[], argv: Partial<Options>): Promise<SchemaMap> {
+  const schemaMap: SchemaMap = new Map()
+  for (const filePath of files) {
+    const file = await readInput(filePath)
+    let schema
+    try {
+      schema = JSON.parse(file)
+    } catch (e) {
+      console.error('failed to parse', filePath, file)
+      throw e
+    }
+    const id = schema[argv.id || '$id'] || filePath
+    if (schemaMap.has(id)) {
+      throw new Error(`duplicate schema for id ${id}`)
+    }
+
+    schemaMap.set(id, { file, schema })
+  }
+
+  return schemaMap
+}
+
+async function processFile(schema: JSONSchema, file: string, out: Output, argv: Partial<Options>): Promise<void> {
+  const ts = await compile(schema, file, argv)
+  await writeOutput(
+    ts,
+    out.dir ? join(process.cwd(), out.dir, `${basename(file, '.json')}.d.ts`) : out.file || ''
+  )
+}
+
+async function readInput(argIn?: string): Promise<string> {
+  if (!argIn || argIn === '-') {
+    return getstdin()
+  }
+
   return readFile(resolve(process.cwd(), argIn), 'utf-8')
 }
 
-function writeOutput(ts: string, argOut: string): Promise<void> {
+async function writeOutput(ts: string, argOut: string): Promise<void> {
   if (!argOut) {
     try {
       process.stdout.write(ts)
-      return Promise.resolve()
     } catch (err) {
-      return Promise.reject(err)
+      throw err
     }
+    return
   }
+
   return writeFile(argOut, ts)
-}
-
-function printHelp() {
-  const pkg = require('../../package.json')
-
-  process.stdout.write(
-`
-${pkg.name} ${pkg.version}
-Usage: json2ts [--input, -i] [IN_FILE] [--output, -o] [OUT_FILE] [OPTIONS]
-
-With no IN_FILE, or when IN_FILE is -, read standard input.
-With no OUT_FILE and when IN_FILE is specified, create .d.ts file in the same directory.
-With no OUT_FILE nor IN_FILE, write to standard output.
-
-You can use any of the following options by adding them at the end.
-Boolean values can be set to false using the 'no-' prefix.
-
-  --cwd=XXX
-      Root directory for resolving $ref
-  --declareExternallyReferenced
-      Declare external schemas referenced via '$ref'?
-  --enableConstEnums
-      Prepend enums with 'const'?
-  --style.XXX=YYY
-      Prettier configuration
-  --unreachableDefinitions
-      Generates code for definitions that aren't referenced by the schema
-`
-  )
 }

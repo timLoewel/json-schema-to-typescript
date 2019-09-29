@@ -102,7 +102,7 @@ json2ts foo.json > foo.d.ts
 # or
 json2ts foo.json foo.d.ts
 # or
-json2ts --input foo.json --output foo.d.ts
+json2ts foo.json --output foo.d.ts
 # or
 json2ts -i foo.json -o foo.d.ts
 ```
