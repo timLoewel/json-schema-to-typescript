@@ -21,9 +21,9 @@ export function run() {
     .forEach(([filename, json]: [string, JSONTestCase]) => {
       const params = { filename }
       test(json.name, t => {
-        const normalised = normalize(json.in, filename);
+        const normalised = normalize(json.in, filename)
         t.snapshot(template(toString(normalised))(params))
-        t.deepEqual(json.out, normalised);
+        t.deepEqual(json.out, normalised)
       })
     })
 }

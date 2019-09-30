@@ -47,6 +47,10 @@ const opts = yargs
     boolean: true,
     description: 'Generates code for definitions that aren\'t referenced by the schema'
   })
+  .option('strictIndexSignatures', {
+    boolean: true,
+    default: true
+  })
   .option('style', {
     description: 'Prettier configuration'
   })

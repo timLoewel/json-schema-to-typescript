@@ -30,15 +30,15 @@ rules.set('Add empty `required` property if none is defined', (schema) => {
 })
 
 // TODO: default to empty schema (as per spec) instead
-rules.set('Default additionalProperties to true', (schema) => {
+rules.set('Default additionalProperties to false', (schema) => {
   if (!('additionalProperties' in schema) &&
     isObjectType(schema) &&
     schema.patternProperties === undefined) {
-    schema.additionalProperties = true
+    schema.additionalProperties = false
   }
 })
 
-rules.set('Default top level `id`', (schema, rootSchema, fileName) => {
+rules.set('Default top level `$id`', (schema, rootSchema, fileName) => {
   if (!schema.$id && stringify(schema) === stringify(rootSchema)) {
     schema.$id = toSafeString(justName(fileName))
   }
