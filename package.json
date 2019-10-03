@@ -44,7 +44,7 @@
   },
   "homepage": "https://github.com/cappasityinc/json-schema-to-typescript#readme",
   "dependencies": {
-    "@cappasityinc/json-schema-ref-parser": "^7.1.3",
+    "@cappasityinc/json-schema-ref-parser": "^7.1.4",
     "cli-color": "^1.4.0",
     "get-stdin": "^7.0.0",
     "glob": "^7.1.4",
