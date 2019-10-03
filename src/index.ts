@@ -1,6 +1,6 @@
+import { Options as $RefOptions } from '@cappasityinc/json-schema-ref-parser'
 import { readFileSync } from 'fs'
-import { JSONSchema6 } from 'json-schema'
-import { Options as $RefOptions } from 'json-schema-ref-parser'
+import { JSONSchema7 } from 'json-schema'
 import { endsWith, merge } from 'lodash'
 import { dirname } from 'path'
 import { Options as PrettierOptions } from 'prettier'
@@ -8,7 +8,7 @@ import { format } from './formatter'
 import { generate } from './generator'
 import { normalize } from './normalizer'
 import { optimize } from './optimizer'
-import { parse } from './parser'
+import { parse, Processed, UsedNames } from './parser'
 import { dereference } from './resolver'
 import { error, stripExtension, Try } from './utils'
 import { validate } from './validator'
@@ -89,7 +89,7 @@ export function compileFromFile(
     () => readFileSync(filename),
     () => { throw new ReferenceError(`Unable to read file "${filename}"`) }
   )
-  const schema = Try<JSONSchema6>(
+  const schema = Try<JSONSchema7>(
     () => JSON.parse(contents.toString()),
     () => { throw new TypeError(`Error parsing JSON in file "${filename}"`) }
   )
@@ -101,9 +101,11 @@ export function compileFromFile(
 }
 
 export async function compile(
-  schema: JSONSchema6,
+  schema: JSONSchema7,
   name: string,
-  options: Partial<Options> = {}
+  options: Partial<Options> = {},
+  processed: Processed = new Map(),
+  usedNames: UsedNames = new Set()
 ): Promise<string> {
 
   const _options = merge({}, DEFAULT_OPTIONS, options)
@@ -119,12 +121,11 @@ export async function compile(
     _options.cwd += '/'
   }
 
-  return format(generate(
-    optimize(
-      parse(await dereference(normalize(schema, name), _options), _options)
-    ),
-    _options
-  ), _options)
+  const [normalizedSchema, refs] = await dereference(normalize(schema, name), _options)
+  const parsedAst = parse(refs, normalizedSchema, _options, normalizedSchema, undefined, true, processed, usedNames)
+  const optimizedAsts = optimize(parsedAst)
+
+  return format(generate(optimizedAsts, _options), _options)
 }
 
 export class ValidationError extends Error { }

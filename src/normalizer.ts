@@ -11,10 +11,10 @@ function hasType(schema: JSONSchema, type: JSONSchemaTypeName) {
   return schema.type === type || (Array.isArray(schema.type) && schema.type.includes(type))
 }
 function isObjectType(schema: JSONSchema) {
-  return schema.properties !== undefined || hasType(schema, 'object') || hasType(schema, 'any')
+  return schema.properties !== undefined || hasType(schema, 'object')
 }
 function isArrayType(schema: JSONSchema) {
-  return schema.items !== undefined || hasType(schema, 'array') || hasType(schema, 'any')
+  return schema.items !== undefined || hasType(schema, 'array')
 }
 
 rules.set('Destructure unary types', schema => {

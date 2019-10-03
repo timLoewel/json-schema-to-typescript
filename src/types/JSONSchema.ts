@@ -1,4 +1,4 @@
-import { JSONSchema6, JSONSchema6Definition, JSONSchema6Type, JSONSchema6TypeName } from 'json-schema'
+import { JSONSchema7, JSONSchema7Definition, JSONSchema7Type, JSONSchema7TypeName } from 'json-schema'
 
 export type SCHEMA_TYPE = 'ALL_OF' | 'UNNAMED_SCHEMA' | 'ANY' | 'ANY_OF'
   | 'BOOLEAN' | 'NAMED_ENUM' | 'NAMED_SCHEMA' | 'NULL' | 'NUMBER' | 'STRING'
@@ -16,10 +16,10 @@ export type JSONSchemaTS = {
   tsType?: string
 }
 
-export type JSONSchemaTypeName = JSONSchema6TypeName
-export type JSONSchemaType = JSONSchema6Type
-export type JSONSchemaDefinition = JSONSchema6Definition
-export type JSONSchema = JSONSchema6 & JSONSchemaTS
+export type JSONSchemaTypeName = JSONSchema7TypeName
+export type JSONSchemaType = JSONSchema7Type
+export type JSONSchemaDefinition = JSONSchema7Definition
+export type JSONSchema = JSONSchema7 & JSONSchemaTS
 
 // const SCHEMA_PROPERTIES = [
 //   'additionalItems', 'additionalProperties', 'items', 'definitions',

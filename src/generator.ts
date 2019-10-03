@@ -2,8 +2,8 @@ import { whiteBright } from 'cli-color'
 import { omit } from 'lodash'
 import { DEFAULT_OPTIONS, Options } from './index'
 import {
-  AST, ASTWithStandaloneName, hasComment, hasStandaloneName, T_ANY, TArray, TEnum, TInterface, TIntersection,
-  TNamedInterface, TUnion
+  AST, ASTWithStandaloneName, hasComment, hasStandaloneName, T_ANY, TArray, TEnum, TInterface,
+  TIntersection, TNamedInterface, TUnion
 } from './types/AST'
 import { log, toSafeString } from './utils'
 
@@ -12,6 +12,7 @@ export function generate(ast: AST, options = DEFAULT_OPTIONS): string {
     options.bannerComment,
     declareNamedTypes(ast, options, ast.standaloneName!),
     declareNamedInterfaces(ast, options, ast.standaloneName!),
+    declareDefinitions(ast, options, ast.standaloneName!),
     declareEnums(ast, options)
   ]
     .filter(Boolean)
@@ -88,6 +89,47 @@ function declareNamedInterfaces(
       type = ast.params.map(_ => declareNamedInterfaces(_, options, rootASTName, processed)).filter(Boolean).join('\n')
       if (ast.type === 'TUPLE' && ast.spreadParam) {
         type += declareNamedInterfaces(ast.spreadParam, options, rootASTName, processed)
+      }
+      break
+    default:
+      type = ''
+  }
+
+  return type
+}
+
+function declareDefinitions(
+  ast: AST,
+  options: Options,
+  rootASTName: string,
+  processed = new Set<AST>()
+): string {
+  if (processed.has(ast)) {
+    return ''
+  }
+
+  processed.add(ast)
+  let type = ''
+
+  switch (ast.type) {
+    case 'ARRAY':
+      type = declareDefinitions((ast as TArray).params, options, rootASTName, processed)
+      break
+    case 'INTERFACE':
+      type = ast.params.filter(_ => _.isUnreachableDefinition).map(_ => {
+        const ast = { ..._.ast, standaloneName: _.standaloneName! } as AST
+        return [
+          declareNamedTypes(ast, options, rootASTName),
+          declareNamedInterfaces(ast, options, ast.standaloneName!)
+        ].filter(Boolean).join('\n\n')
+      }).filter(Boolean).join('\n\n')
+      break
+    case 'INTERSECTION':
+    case 'TUPLE':
+    case 'UNION':
+      type = ast.params.map(_ => declareDefinitions(_, options, rootASTName, processed)).filter(Boolean).join('\n')
+      if (ast.type === 'TUPLE' && ast.spreadParam) {
+        type += declareDefinitions(ast.spreadParam, options, rootASTName, processed)
       }
       break
     default:
@@ -298,6 +340,7 @@ function generateComment(comment: string): string {
 }
 
 function generateStandaloneEnum(ast: TEnum, options: Options): string {
+  console.error('standalone enum')
   return (hasComment(ast) ? generateComment(ast.comment) + '\n' : '')
     + 'export ' + (options.enableConstEnums ? 'const ' : '') + `enum ${toSafeString(ast.standaloneName)} {`
     + '\n'

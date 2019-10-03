@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
+import { ResolverOptions } from '@cappasityinc/json-schema-ref-parser'
 import { whiteBright } from 'cli-color'
 import fs = require('fs')
 import getstdin = require('get-stdin')
 import * as _glob from 'glob'
 import isGlob = require('is-glob')
-import { ResolverOptions } from 'json-schema-ref-parser'
-import { basename, dirname, extname, join, relative, resolve } from 'path'
+import { basename, dirname, extname, join, resolve } from 'path'
 import { promisify } from 'util'
 import yargs = require('yargs')
 import { compile, Options } from './index'
+import { Processed, UsedNames } from './parser'
 import { JSONSchema } from './types/JSONSchema'
 
 const { mkdir, readFile, writeFile } = fs.promises
@@ -78,7 +79,11 @@ async function main(argv: typeof opts) {
 }
 
 type Output = { dir?: string, file?: string }
-type SchemaMap = Map<string, { file: string, schema: JSONSchema }>
+type SchemaMap = Map<string, {
+  file: string,
+  schema: JSONSchema,
+  cwd: string
+}>
 
 async function processFiles(argIn: string | string[], argOut: string, argv: Partial<Options>): Promise<void> {
   try {
@@ -107,12 +112,11 @@ async function processFiles(argIn: string | string[], argOut: string, argv: Part
     }
 
     const schemaMap: SchemaMap = await readFiles(files, argv)
-    const base = argv.cwd!
     const resolver: ResolverOptions = {
       order: 1,
       canRead: true,
       async read(file): Promise<string> {
-        const id = relative(base, file.url)
+        const id = basename(file.url)
         const datum = schemaMap.get(id)
         if (!datum) {
           throw new Error(`cant find ref ${id}`)
@@ -128,8 +132,11 @@ async function processFiles(argIn: string | string[], argOut: string, argv: Part
       ? { file: argOut }
       : { dir: argOut }
 
-    for (const [path, { schema }] of schemaMap.entries()) {
-      await processFile(schema, path, output, argv)
+    const processed: Processed = new Map()
+    const usedNames: UsedNames = new Set()
+
+    for (const [path, { schema, cwd }] of schemaMap.entries()) {
+      await processFile(schema, path, output, { ...argv, cwd }, processed, usedNames)
     }
   } catch (e) {
     console.error(whiteBright.bgRedBright('error'), e)
@@ -140,7 +147,7 @@ async function processFiles(argIn: string | string[], argOut: string, argv: Part
 async function readFiles(files: string[], argv: Partial<Options>): Promise<SchemaMap> {
   const schemaMap: SchemaMap = new Map()
   for (const filePath of files) {
-    const file = await readInput(filePath)
+    const [file, cwd] = await readInput(filePath)
     let schema
     try {
       schema = JSON.parse(file)
@@ -153,26 +160,39 @@ async function readFiles(files: string[], argv: Partial<Options>): Promise<Schem
       throw new Error(`duplicate schema for id ${id}`)
     }
 
-    schemaMap.set(id, { file, schema })
+    schemaMap.set(id, { file, schema, cwd })
   }
 
   return schemaMap
 }
 
-async function processFile(schema: JSONSchema, file: string, out: Output, argv: Partial<Options>): Promise<void> {
-  const ts = await compile(schema, file, argv)
+async function processFile(
+  schema: JSONSchema,
+  file: string,
+  out: Output,
+  argv: Partial<Options>,
+  processed?: Processed,
+  usedNames?: UsedNames
+): Promise<void> {
+  const ts = await compile(schema, file, argv, processed, usedNames)
   await writeOutput(
     ts,
-    out.dir ? join(process.cwd(), out.dir, `${basename(file, '.json')}.d.ts`) : out.file || ''
+    out.dir ? join(opts.cwd, out.dir, `${basename(file, '.json')}.d.ts`) : out.file || ''
   )
 }
 
-async function readInput(argIn?: string): Promise<string> {
+async function readInput(argIn?: string): Promise<[string, string]> {
   if (!argIn || argIn === '-') {
-    return getstdin()
+    return Promise.all([
+      getstdin(),
+      opts.cwd
+    ])
   }
 
-  return readFile(resolve(process.cwd(), argIn), 'utf-8')
+  return Promise.all([
+    readFile(resolve(opts.cwd, argIn), 'utf-8'),
+    dirname(resolve(opts.cwd, argIn))
+  ])
 }
 
 async function writeOutput(ts: string, argOut: string): Promise<void> {

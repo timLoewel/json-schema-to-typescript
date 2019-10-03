@@ -26,7 +26,6 @@ export function typeOfSchema(schema: JSONSchema): SCHEMA_TYPE {
       break
     case 'array': return 'UNTYPED_ARRAY'
     case 'null': return 'NULL'
-    case 'any': return 'ANY'
   }
 
   switch (typeof schema.default) {
